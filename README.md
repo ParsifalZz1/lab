@@ -14,6 +14,12 @@ uv --directory backend sync --group dev
 npm --prefix frontend install
 ```
 
+## Run The API
+
+```bash
+uv --directory backend run uvicorn app.main:app --reload
+```
+
 ## Checks
 
 ```bash
