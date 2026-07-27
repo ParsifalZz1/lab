@@ -130,7 +130,7 @@ MVP 的首个固定场景为“电商评论分批分析并生成改进建议”�
 
 - [x] 在 attempt 终态后原子更新 TaskNode 状态和下游依赖计数。
 - [x] 实现 `PENDING -> READY -> SCHEDULED -> RUNNING -> terminal` 状态机。
-- [ ] 实现 optional 节点失败后的缺失对象与降级事件。
+- [x] 实现 optional 节点失败后的缺失对象与降级事件。
 - [x] 实现确定性 Reducer：字段合并、去重、排序、频次统计和来源保留。
 - [x] 为最终结果定义 Context Package 与 Artifact 存储。
 - [x] 用 Fake Brain 将 Context Package 转为 MVP 报告。

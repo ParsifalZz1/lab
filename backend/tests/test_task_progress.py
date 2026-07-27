@@ -7,7 +7,11 @@ from app.adapters.database import Base
 from app.domain.states import TaskStatus
 from app.repositories.records import RunRecord, TaskNodeRecord
 from app.services.run_lifecycle import cancel_run
-from app.services.task_progress import mark_task_succeeded, transition_task
+from app.services.task_progress import (
+    mark_optional_task_failed,
+    mark_task_succeeded,
+    transition_task,
+)
 
 
 def task(task_id: str, depends_on: list[str]) -> TaskNodeRecord:
@@ -96,3 +100,13 @@ def test_cancelling_run_cancels_unstarted_tasks() -> None:
 
     assert run.status == "CANCELLED"
     assert session.get(TaskNodeRecord, "pending").status == "CANCELLED"
+
+
+def test_optional_task_failure_keeps_missing_output_metadata() -> None:
+    optional = task("optional", [])
+    optional.optional = True
+
+    mark_optional_task_failed(optional, "WORKER_OFFLINE")
+
+    assert optional.status == "FAILED"
+    assert optional.input_data["missing_output"]["error_code"] == "WORKER_OFFLINE"

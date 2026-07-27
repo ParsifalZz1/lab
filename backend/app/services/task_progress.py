@@ -38,3 +38,11 @@ def mark_task_succeeded(session: Session, task_id: str, attempt_id: str) -> list
 def transition_task(task: TaskNodeRecord, target: TaskStatus) -> None:
     ensure_transition(TaskStatus(task.status), target, TASK_TRANSITIONS)
     task.status = target.value
+
+
+def mark_optional_task_failed(task: TaskNodeRecord, error_code: str) -> None:
+    if not task.optional:
+        raise ValueError("Only optional tasks can degrade after failure")
+    task.status = TaskStatus.FAILED.value
+    task.finished_at = datetime.now(UTC)
+    task.input_data = {**task.input_data, "missing_output": {"error_code": error_code}}
