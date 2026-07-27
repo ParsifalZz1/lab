@@ -6,6 +6,15 @@ from sqlalchemy import engine_from_config, pool
 from app.adapters.database import Base
 from app.config import get_settings
 from app.repositories.events import DomainEventRecord  # noqa: F401
+from app.repositories.records import (  # noqa: F401
+    ArtifactRecord,
+    DagSnapshotRecord,
+    LeaseRecord,
+    RunRecord,
+    TaskAttemptRecord,
+    TaskNodeRecord,
+    WorkerRecordDb,
+)
 
 config = context.config
 

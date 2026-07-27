@@ -17,6 +17,8 @@ def test_upgrade_head_creates_alembic_version_table(tmp_path: Path) -> None:
     with engine.connect() as connection:
         assert (
             connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-            == "0002"
+            == "0003"
         )
     assert inspect(engine).has_table("domain_events")
+    indexes = {index["name"] for index in inspect(engine).get_indexes("task_nodes")}
+    assert "ix_task_nodes_run_status_priority" in indexes
