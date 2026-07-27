@@ -8,6 +8,7 @@ from app.services.registry import RegistryService
 from app.services.scheduler import (
     NoEligibleWorkerError,
     choose_least_loaded_worker,
+    choose_retry_worker,
     create_assignment,
 )
 from app.workers.register_mock_workers import build_mock_workers
@@ -32,6 +33,23 @@ def test_scheduler_chooses_lowest_active_task_ratio() -> None:
 def test_scheduler_rejects_empty_candidates() -> None:
     with pytest.raises(NoEligibleWorkerError):
         choose_least_loaded_worker([])
+
+
+def test_retry_prefers_different_failure_domain() -> None:
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    registry = RegistryService(session, Settings(_env_file=None))
+    first, second = build_mock_workers(2)
+    registry.register(first)
+    registry.register(second)
+    session.flush()
+    candidates = registry.get_ready_workers()
+
+    assert (
+        choose_retry_worker(candidates, candidates[0]).failure_domain
+        != candidates[0].failure_domain
+    )
 
 
 def test_assignment_records_snapshot_and_reason() -> None:

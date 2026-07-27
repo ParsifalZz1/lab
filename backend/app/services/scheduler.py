@@ -22,6 +22,17 @@ def choose_least_loaded_worker(candidates: list[WorkerRecordDb]) -> WorkerRecord
     )
 
 
+def choose_retry_worker(
+    candidates: list[WorkerRecordDb], previous_worker: WorkerRecordDb
+) -> WorkerRecordDb:
+    alternate_domain = [
+        candidate
+        for candidate in candidates
+        if candidate.failure_domain != previous_worker.failure_domain
+    ]
+    return choose_least_loaded_worker(alternate_domain or candidates)
+
+
 def create_assignment(
     session: Session,
     *,
