@@ -95,7 +95,7 @@ MVP 的首个固定场景为“电商评论分批分析并生成改进建议”�
 
 目标：将用户目标变为可信、可执行的任务图。
 
-- [ ] 定义 DAG、Node、Edge、InputRef、RetryPolicy 的 Pydantic/JSON Schema。
+- [x] 定义 DAG、Node、Edge、InputRef、RetryPolicy 的 Pydantic/JSON Schema。
 - [ ] 实现节点 ID 唯一、依赖存在、输入引用、预算和能力字段校验。
 - [ ] 使用拓扑排序检测环路并计算初始 ready 节点集合。
 - [ ] 实现固定模板的评论分析 DAG Generator。
