@@ -1,13 +1,16 @@
+import json
 from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.registry import get_session
 from app.domain.ids import new_run_id
+from app.repositories.events import DomainEventRecord
 from app.repositories.records import DagSnapshotRecord, RunRecord, TaskNodeRecord
 from app.services.run_lifecycle import cancel_run
 
@@ -87,3 +90,26 @@ def list_tasks(run_id: str, session: Session = Depends(get_session)) -> list[dic
         {"task_id": task.task_id, "status": task.status, "depends_on": task.depends_on}
         for task in session.scalars(select(TaskNodeRecord).where(TaskNodeRecord.run_id == run_id))
     ]
+
+
+@router.get("/{run_id}/events")
+def stream_events(
+    run_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> StreamingResponse:
+    last_event_id = int(request.headers.get("Last-Event-ID", "0"))
+    events = session.scalars(
+        select(DomainEventRecord)
+        .where(DomainEventRecord.run_id == run_id, DomainEventRecord.sequence > last_event_id)
+        .order_by(DomainEventRecord.sequence)
+    ).all()
+
+    def body():
+        for event in events:
+            yield (
+                f"id: {event.sequence}\nevent: {event.topic}\n"
+                f"data: {json.dumps(event.payload)}\n\n"
+            )
+
+    return StreamingResponse(body(), media_type="text/event-stream")
