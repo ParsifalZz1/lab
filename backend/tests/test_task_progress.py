@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.adapters.database import Base
 from app.domain.states import TaskStatus
 from app.repositories.records import RunRecord, TaskNodeRecord
+from app.services.run_lifecycle import cancel_run
 from app.services.task_progress import mark_task_succeeded, transition_task
 
 
@@ -66,3 +67,32 @@ def test_task_state_machine_moves_through_execution_states() -> None:
     transition_task(record, TaskStatus.SUCCEEDED)
 
     assert record.status == "SUCCEEDED"
+
+
+def test_cancelling_run_cancels_unstarted_tasks() -> None:
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    now = datetime.now(UTC)
+    session.add(
+        RunRecord(
+            run_id="run_01",
+            tenant_id="tenant",
+            request_id="trace",
+            goal="goal",
+            output_constraints={},
+            status="EXECUTING",
+            degraded=False,
+            created_at=now,
+            updated_at=now,
+        )
+    )
+    pending = task("pending", [])
+    pending.run_id = "run_01"
+    session.add(pending)
+    session.flush()
+
+    run = cancel_run(session, "run_01")
+
+    assert run.status == "CANCELLED"
+    assert session.get(TaskNodeRecord, "pending").status == "CANCELLED"
