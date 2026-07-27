@@ -133,7 +133,7 @@ MVP 的首个固定场景为“电商评论分批分析并生成改进建议”�
 - [ ] 实现 optional 节点失败后的缺失对象与降级事件。
 - [x] 实现确定性 Reducer：字段合并、去重、排序、频次统计和来源保留。
 - [x] 为最终结果定义 Context Package 与 Artifact 存储。
-- [ ] 用 Fake Brain 将 Context Package 转为 MVP 报告。
+- [x] 用 Fake Brain 将 Context Package 转为 MVP 报告。
 - [ ] 实现 Run 终态判定和取消传播。
 
 验收：多批评论结果可合并为 Top 问题、证据和建议；每项输出可回溯到 task 与 attempt。
