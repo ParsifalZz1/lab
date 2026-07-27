@@ -98,20 +98,30 @@ class Artifact(DomainModel):
 
 class CapabilityRecord(DomainModel):
     name: str
-    version: str
+    version: str = Field(pattern=r"^v[1-9][0-9]*$")
     input_schema: str
     output_schema: str
     constraints: dict[str, Any] = Field(default_factory=dict)
     quality_hints: dict[str, Any] = Field(default_factory=dict)
 
 
+class Endpoint(DomainModel):
+    protocol: Literal["http", "https"]
+    url: str = Field(pattern=r"^https?://")
+
+
+class WorkerResources(DomainModel):
+    max_concurrency: int = Field(gt=0)
+    context_window: int | None = Field(default=None, gt=0)
+
+
 class WorkerRecord(DomainModel):
-    worker_id: str
+    worker_id: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9._-]{2,127}$")
     role: str
     display_name: str
-    endpoints: tuple[dict[str, str], ...]
+    endpoints: tuple[Endpoint, ...] = Field(min_length=1)
     capabilities: tuple[CapabilityRecord, ...]
-    resources: dict[str, Any]
+    resources: WorkerResources
     location: dict[str, str] = Field(default_factory=dict)
     failure_domain: str
     status: WorkerStatus = WorkerStatus.REGISTERING

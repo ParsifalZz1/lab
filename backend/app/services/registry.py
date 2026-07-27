@@ -21,9 +21,9 @@ class RegistryService:
         values = {
             "role": worker.role,
             "display_name": worker.display_name,
-            "endpoints": [endpoint for endpoint in worker.endpoints],
+            "endpoints": [endpoint.model_dump() for endpoint in worker.endpoints],
             "capabilities": [capability.model_dump() for capability in worker.capabilities],
-            "resources": worker.resources,
+            "resources": worker.resources.model_dump(),
             "location": worker.location,
             "failure_domain": worker.failure_domain,
             "status": WorkerStatus.READY.value,
