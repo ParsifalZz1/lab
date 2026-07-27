@@ -5,6 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.adapters.database import Base
 from app.config import get_settings
+from app.repositories.events import DomainEventRecord  # noqa: F401
 
 config = context.config
 

@@ -68,7 +68,7 @@ MVP 的首个固定场景为“电商评论分批分析并生成改进建议”�
 - [x] 实现 `WorkerRecord`、`CapabilityRecord` 和 `Lease` 数据模型。
 - [x] 实现状态枚举和合法状态迁移检查。
 - [x] 为 `run_id`、`dag_id`、`task_id`、`attempt_id` 建立稳定 ID 生成器。
-- [ ] 实现事件表和 Outbox 写入接口。
+- [x] 实现事件表和 Outbox 写入接口。
 - [ ] 为运行查询、任务查询和节点查询建立索引。
 
 验收：可创建一个 Run、保存一个静态 DAG、写入状态事件，并在重启后读取完整快照。
