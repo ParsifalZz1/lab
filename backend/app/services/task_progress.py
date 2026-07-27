@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.domain.states import TaskStatus
+from app.domain.states import TASK_TRANSITIONS, TaskStatus, ensure_transition
 from app.repositories.records import TaskNodeRecord
 
 
@@ -33,3 +33,8 @@ def mark_task_succeeded(session: Session, task_id: str, attempt_id: str) -> list
             child.ready_at = datetime.now(UTC)
             newly_ready.append(child.task_id)
     return newly_ready
+
+
+def transition_task(task: TaskNodeRecord, target: TaskStatus) -> None:
+    ensure_transition(TaskStatus(task.status), target, TASK_TRANSITIONS)
+    task.status = target.value

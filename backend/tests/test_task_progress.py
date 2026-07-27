@@ -4,8 +4,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.adapters.database import Base
+from app.domain.states import TaskStatus
 from app.repositories.records import RunRecord, TaskNodeRecord
-from app.services.task_progress import mark_task_succeeded
+from app.services.task_progress import mark_task_succeeded, transition_task
 
 
 def task(task_id: str, depends_on: list[str]) -> TaskNodeRecord:
@@ -54,3 +55,14 @@ def test_successful_dependencies_make_downstream_task_ready() -> None:
     assert mark_task_succeeded(session, "first", "attempt_01") == []
     assert mark_task_succeeded(session, "second", "attempt_02") == ["reduce"]
     assert session.get(TaskNodeRecord, "reduce").status == "READY"
+
+
+def test_task_state_machine_moves_through_execution_states() -> None:
+    record = task("task", [])
+
+    transition_task(record, TaskStatus.READY)
+    transition_task(record, TaskStatus.SCHEDULED)
+    transition_task(record, TaskStatus.RUNNING)
+    transition_task(record, TaskStatus.SUCCEEDED)
+
+    assert record.status == "SUCCEEDED"
