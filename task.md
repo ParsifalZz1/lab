@@ -113,7 +113,7 @@ MVP 的首个固定场景为“电商评论分批分析并生成改进建议”�
 
 - [x] 实现候选硬过滤：在线、租约、能力、版本、上下文窗口和容量。
 - [x] 实现基线策略：能力匹配后选择最少活动任务的 Worker。
-- [ ] 写入包含快照版本和选择理由的 Assignment。
+- [x] 写入包含快照版本和选择理由的 Assignment。
 - [ ] 实现有界并发 Execution Coordinator。
 - [ ] 实现标准 TaskEnvelope、截止时间、幂等键和取消令牌。
 - [ ] 实现 HTTP Mock Worker Adapter 与统一 TaskResult 解析。

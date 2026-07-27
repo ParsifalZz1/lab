@@ -80,6 +80,19 @@ class TaskAttemptRecord(Base):
     result_artifact_id: Mapped[str | None] = mapped_column(String(64))
 
 
+class AssignmentRecord(Base):
+    __tablename__ = "assignments"
+
+    assignment_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.run_id"), nullable=False)
+    task_id: Mapped[str] = mapped_column(ForeignKey("task_nodes.task_id"), nullable=False)
+    worker_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    registry_snapshot_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    reason: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    deadline_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class ArtifactRecord(Base):
     __tablename__ = "artifacts"
 

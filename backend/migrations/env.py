@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.repositories.events import DomainEventRecord  # noqa: F401
 from app.repositories.records import (  # noqa: F401
     ArtifactRecord,
+    AssignmentRecord,
     DagSnapshotRecord,
     LeaseRecord,
     RunRecord,
