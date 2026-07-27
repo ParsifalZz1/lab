@@ -17,6 +17,7 @@ npm --prefix frontend install
 ## Run The API
 
 ```bash
+make db-upgrade
 uv --directory backend run uvicorn app.main:app --reload
 ```
 
