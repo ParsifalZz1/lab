@@ -3,6 +3,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.domain.states import AttemptStatus, RunStatus, TaskStatus, WorkerStatus
+
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
@@ -22,7 +24,7 @@ class Run(DomainModel):
     goal: str
     input_ref: str | None = None
     output_constraints: dict[str, Any] = Field(default_factory=dict)
-    status: str = "RECEIVED"
+    status: RunStatus = RunStatus.RECEIVED
     dag_version: int | None = None
     degraded: bool = False
     created_at: datetime = Field(default_factory=utc_now)
@@ -50,7 +52,7 @@ class TaskNode(DomainModel):
     input_data: dict[str, Any] = Field(default_factory=dict)
     output_contract: str
     required_capabilities: tuple[dict[str, str], ...] = ()
-    status: str = "PENDING"
+    status: TaskStatus = TaskStatus.PENDING
     optional: bool = False
     priority: int = 50
     retry_policy: dict[str, Any] = Field(default_factory=dict)
@@ -69,7 +71,7 @@ class TaskAttempt(DomainModel):
     worker_id: str
     ordinal: int = Field(ge=1)
     idempotency_key: str
-    status: str = "CREATED"
+    status: AttemptStatus = AttemptStatus.CREATED
     dispatched_at: datetime | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
@@ -112,7 +114,7 @@ class WorkerRecord(DomainModel):
     resources: dict[str, Any]
     location: dict[str, str] = Field(default_factory=dict)
     failure_domain: str
-    status: str = "REGISTERING"
+    status: WorkerStatus = WorkerStatus.REGISTERING
     version: int = Field(default=1, ge=1)
     updated_at: datetime = Field(default_factory=utc_now)
 
