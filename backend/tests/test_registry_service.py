@@ -67,3 +67,32 @@ def test_lease_scan_marks_worker_suspect_then_offline() -> None:
     assert service.get_ready_workers() == []
     service.scan_expired_leases(started_at + timedelta(seconds=31))
     assert session.get(WorkerRecordDb, worker.worker_id).status == WorkerStatus.OFFLINE.value
+
+
+def test_candidates_filter_by_capability_and_region() -> None:
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    service = RegistryService(session, Settings(_env_file=None))
+    worker = WorkerRecord(
+        worker_id="worker_01",
+        role="worker",
+        display_name="Worker 01",
+        endpoints=({"protocol": "https", "url": "https://worker.example/tasks"},),
+        capabilities=(
+            CapabilityRecord(
+                name="extract", version="v1", input_schema="in.v1", output_schema="out.v1"
+            ),
+        ),
+        resources={"max_concurrency": 1},
+        location={"region": "cn-shanghai"},
+        failure_domain="host:01",
+    )
+    service.register(worker)
+    session.flush()
+
+    candidates = service.find_candidates(
+        capability_name="extract", capability_version="v1", region="cn-shanghai"
+    )
+
+    assert [candidate.worker_id for candidate in candidates] == ["worker_01"]

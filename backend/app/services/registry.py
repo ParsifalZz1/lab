@@ -68,6 +68,40 @@ class RegistryService:
             )
         )
 
+    def find_candidates(
+        self,
+        *,
+        role: str | None = None,
+        capability_name: str | None = None,
+        capability_version: str | None = None,
+        region: str | None = None,
+        status: str = "READY",
+        now: datetime | None = None,
+    ) -> list[WorkerRecordDb]:
+        now = now or datetime.now(UTC)
+        workers = self._session.scalars(
+            select(WorkerRecordDb).where(WorkerRecordDb.status == status)
+        ).all()
+        candidates: list[WorkerRecordDb] = []
+        for worker in workers:
+            if role and worker.role != role:
+                continue
+            if region and worker.location.get("region") != region:
+                continue
+            if capability_name and not any(
+                capability.get("name") == capability_name
+                and (capability_version is None or capability.get("version") == capability_version)
+                for capability in worker.capabilities
+            ):
+                continue
+            leases = self._session.scalars(
+                select(LeaseRecord).where(LeaseRecord.worker_id == worker.worker_id)
+            ).all()
+            if not any(_as_utc(lease.expires_at) > now for lease in leases):
+                continue
+            candidates.append(worker)
+        return candidates
+
     def scan_expired_leases(self, now: datetime | None = None) -> list[str]:
         now = now or datetime.now(UTC)
         changed_workers: list[str] = []

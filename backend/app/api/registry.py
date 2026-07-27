@@ -62,6 +62,35 @@ def drain_node(worker_id: str, session: Session = Depends(get_session)) -> dict[
     return {"worker_id": worker_id, "status": worker.status}
 
 
+@router.get("")
+def list_candidates(
+    request: Request,
+    role: str | None = None,
+    capability_name: str | None = None,
+    capability_version: str | None = None,
+    region: str | None = None,
+    status: str = "READY",
+    session: Session = Depends(get_session),
+) -> list[dict[str, object]]:
+    workers = RegistryService(session, request.app.state.settings).find_candidates(
+        role=role,
+        capability_name=capability_name,
+        capability_version=capability_version,
+        region=region,
+        status=status,
+    )
+    return [
+        {
+            "worker_id": worker.worker_id,
+            "role": worker.role,
+            "status": worker.status,
+            "capabilities": worker.capabilities,
+            "location": worker.location,
+        }
+        for worker in workers
+    ]
+
+
 @router.delete("/{worker_id}")
 def unregister_node(worker_id: str, session: Session = Depends(get_session)) -> dict[str, str]:
     worker = session.get(WorkerRecordDb, worker_id)
