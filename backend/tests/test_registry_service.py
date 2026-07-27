@@ -10,6 +10,7 @@ from app.domain.states import WorkerStatus
 from app.repositories.events import DomainEventRecord
 from app.repositories.records import WorkerRecordDb
 from app.services.registry import RegistryService
+from app.workers.register_mock_workers import build_mock_workers
 
 
 def test_registering_the_same_worker_updates_its_record() -> None:
@@ -98,3 +99,10 @@ def test_candidates_filter_by_capability_and_region() -> None:
     )
 
     assert [candidate.worker_id for candidate in candidates] == ["worker_01"]
+
+
+def test_mock_worker_factory_creates_eight_independent_workers() -> None:
+    workers = build_mock_workers()
+
+    assert len(workers) == 8
+    assert len({worker.failure_domain for worker in workers}) == 8

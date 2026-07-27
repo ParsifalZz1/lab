@@ -1,4 +1,4 @@
-.PHONY: backend-format backend-lint backend-test db-upgrade frontend-lint frontend-test
+.PHONY: backend-format backend-lint backend-test db-upgrade mock-workers frontend-lint frontend-test
 
 backend-format:
 	uv --directory backend run ruff format .
@@ -11,6 +11,9 @@ backend-test:
 
 db-upgrade:
 	uv --directory backend run alembic upgrade head
+
+mock-workers:
+	uv --directory backend run python -m app.workers.register_mock_workers
 
 frontend-lint:
 	npm --prefix frontend run lint
