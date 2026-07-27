@@ -4,6 +4,8 @@ from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response
 
+from app.adapters.database import create_session_factory
+from app.api.registry import router as registry_router
 from app.config import Settings, get_settings
 from app.logging import configure_logging, trace_id_context
 
@@ -16,6 +18,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="ModelFlow API", version="0.1.0")
     app.state.settings = settings
+    app.state.session_factory = create_session_factory(settings)
+    app.include_router(registry_router)
 
     @app.middleware("http")
     async def add_trace_id(
