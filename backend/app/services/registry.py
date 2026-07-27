@@ -89,18 +89,29 @@ class RegistryService:
         capability_name: str | None = None,
         capability_version: str | None = None,
         region: str | None = None,
-        status: str = "READY",
+        min_context_window: int | None = None,
+        status: str | None = None,
         now: datetime | None = None,
     ) -> list[WorkerRecordDb]:
         now = now or datetime.now(UTC)
-        workers = self._session.scalars(
-            select(WorkerRecordDb).where(WorkerRecordDb.status == status)
-        ).all()
+        statement = select(WorkerRecordDb)
+        if status:
+            statement = statement.where(WorkerRecordDb.status == status)
+        else:
+            statement = statement.where(WorkerRecordDb.status.in_(["READY", "BUSY"]))
+        workers = self._session.scalars(statement).all()
         candidates: list[WorkerRecordDb] = []
         for worker in workers:
             if role and worker.role != role:
                 continue
             if region and worker.location.get("region") != region:
+                continue
+            if (
+                min_context_window
+                and worker.resources.get("context_window", 0) < min_context_window
+            ):
+                continue
+            if worker.active_tasks >= worker.resources["max_concurrency"]:
                 continue
             if capability_name and not any(
                 capability.get("name") == capability_name

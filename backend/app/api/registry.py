@@ -71,7 +71,8 @@ def list_candidates(
     capability_name: str | None = None,
     capability_version: str | None = None,
     region: str | None = None,
-    status: str = "READY",
+    min_context_window: int | None = None,
+    status: str | None = None,
     session: Session = Depends(get_session),
 ) -> list[dict[str, object]]:
     workers = RegistryService(session, request.app.state.settings).find_candidates(
@@ -79,6 +80,7 @@ def list_candidates(
         capability_name=capability_name,
         capability_version=capability_version,
         region=region,
+        min_context_window=min_context_window,
         status=status,
     )
     return [

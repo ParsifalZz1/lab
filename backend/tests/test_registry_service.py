@@ -101,6 +101,20 @@ def test_candidates_filter_by_capability_and_region() -> None:
     assert [candidate.worker_id for candidate in candidates] == ["worker_01"]
 
 
+def test_candidates_exclude_insufficient_context_and_full_capacity() -> None:
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    session = Session(engine)
+    service = RegistryService(session, Settings(_env_file=None))
+    worker = build_mock_workers(1)[0]
+    service.register(worker)
+    session.flush()
+    record = session.get(WorkerRecordDb, worker.worker_id)
+    record.active_tasks = 1
+
+    assert service.find_candidates(min_context_window=8_192) == []
+
+
 def test_mock_worker_factory_creates_eight_independent_workers() -> None:
     workers = build_mock_workers()
 
