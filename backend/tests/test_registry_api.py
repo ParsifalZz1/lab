@@ -29,7 +29,7 @@ def test_registry_registers_and_heartbeats_worker(tmp_path) -> None:
     registered = client.post("/v1/registry/nodes", json=payload)
     heartbeat = client.post(
         "/v1/registry/nodes/worker_01/heartbeat",
-        json={"lease_id": registered.json()["lease_id"], "sequence": 1},
+        json={"lease_id": registered.json()["lease_id"], "sequence": 1, "active_tasks": 1},
     )
 
     assert registered.status_code == 201

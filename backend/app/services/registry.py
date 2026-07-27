@@ -28,6 +28,8 @@ class RegistryService:
             "failure_domain": worker.failure_domain,
             "status": WorkerStatus.READY.value,
             "version": (record.version + 1) if record else 1,
+            "active_tasks": 0,
+            "queue_depth": 0,
             "updated_at": now,
         }
         if record is None:
@@ -51,7 +53,9 @@ class RegistryService:
         self._session.add(lease)
         return lease
 
-    def heartbeat(self, worker_id: str, lease_id: str, sequence: int) -> LeaseRecord:
+    def heartbeat(
+        self, worker_id: str, lease_id: str, sequence: int, active_tasks: int, queue_depth: int
+    ) -> LeaseRecord:
         lease = self._session.get(LeaseRecord, lease_id)
         if lease is None or lease.worker_id != worker_id or sequence <= lease.sequence:
             raise ValueError("Invalid or out-of-order worker heartbeat")
@@ -59,6 +63,11 @@ class RegistryService:
         lease.sequence = sequence
         lease.last_seen_at = now
         lease.expires_at = now + timedelta(seconds=self._settings.registry_lease_seconds)
+        worker = self._session.get(WorkerRecordDb, worker_id)
+        if worker is not None:
+            worker.active_tasks = active_tasks
+            worker.queue_depth = queue_depth
+            worker.status = WorkerStatus.BUSY.value if active_tasks else WorkerStatus.READY.value
         return lease
 
     def get_ready_workers(self) -> list[WorkerRecordDb]:

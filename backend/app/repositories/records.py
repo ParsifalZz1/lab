@@ -110,6 +110,8 @@ class WorkerRecordDb(Base):
     failure_domain: Mapped[str] = mapped_column(String(128), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False)
+    active_tasks: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    queue_depth: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 

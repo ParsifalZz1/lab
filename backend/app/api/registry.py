@@ -15,6 +15,8 @@ router = APIRouter(prefix="/v1/registry/nodes", tags=["registry"])
 class HeartbeatRequest(BaseModel):
     lease_id: str
     sequence: int = Field(ge=1)
+    active_tasks: int = Field(default=0, ge=0)
+    queue_depth: int = Field(default=0, ge=0)
 
 
 def get_session(request: Request) -> Generator[Session, None, None]:
@@ -46,7 +48,7 @@ def heartbeat(
 ) -> dict[str, str | int]:
     try:
         lease = RegistryService(session, request.app.state.settings).heartbeat(
-            worker_id, body.lease_id, body.sequence
+            worker_id, body.lease_id, body.sequence, body.active_tasks, body.queue_depth
         )
     except ValueError as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
