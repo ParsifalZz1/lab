@@ -7,6 +7,7 @@ from app.adapters.database import Base
 from app.config import Settings
 from app.domain.models import CapabilityRecord, WorkerRecord
 from app.domain.states import WorkerStatus
+from app.repositories.events import DomainEventRecord
 from app.repositories.records import WorkerRecordDb
 from app.services.registry import RegistryService
 
@@ -38,6 +39,7 @@ def test_registering_the_same_worker_updates_its_record() -> None:
     session.commit()
 
     assert len(service.get_ready_workers()) == 1
+    assert session.query(DomainEventRecord).count() == 1
 
 
 def test_lease_scan_marks_worker_suspect_then_offline() -> None:

@@ -7,6 +7,7 @@ from app.config import Settings
 from app.domain.ids import new_id
 from app.domain.models import WorkerRecord
 from app.domain.states import WorkerStatus
+from app.repositories.events import EventOutbox
 from app.repositories.records import LeaseRecord, WorkerRecordDb
 
 
@@ -35,6 +36,7 @@ class RegistryService:
         if record is None:
             record = WorkerRecordDb(worker_id=worker.worker_id, **values)
             self._session.add(record)
+            self._write_status_event(worker.worker_id, "REGISTERING", WorkerStatus.READY.value)
         else:
             for key, value in values.items():
                 setattr(record, key, value)
@@ -67,7 +69,10 @@ class RegistryService:
         if worker is not None:
             worker.active_tasks = active_tasks
             worker.queue_depth = queue_depth
-            worker.status = WorkerStatus.BUSY.value if active_tasks else WorkerStatus.READY.value
+            next_status = WorkerStatus.BUSY.value if active_tasks else WorkerStatus.READY.value
+            if worker.status != next_status:
+                self._write_status_event(worker.worker_id, worker.status, next_status)
+                worker.status = next_status
         return lease
 
     def get_ready_workers(self) -> list[WorkerRecordDb]:
@@ -123,14 +128,31 @@ class RegistryService:
             last_seen_at = _as_utc(lease.last_seen_at)
             if expires_at <= now:
                 if worker.status != WorkerStatus.OFFLINE.value:
+                    self._write_status_event(
+                        worker.worker_id, worker.status, WorkerStatus.OFFLINE.value
+                    )
                     worker.status = WorkerStatus.OFFLINE.value
                     changed_workers.append(worker.worker_id)
             elif last_seen_at + timedelta(
                 seconds=self._settings.registry_heartbeat_seconds
             ) <= now and worker.status in {WorkerStatus.READY.value, WorkerStatus.BUSY.value}:
+                self._write_status_event(
+                    worker.worker_id, worker.status, WorkerStatus.SUSPECT.value
+                )
                 worker.status = WorkerStatus.SUSPECT.value
                 changed_workers.append(worker.worker_id)
         return changed_workers
+
+    def _write_status_event(self, worker_id: str, previous: str, current: str) -> None:
+        EventOutbox(self._session).append(
+            topic="worker.status_changed",
+            aggregate_type="worker",
+            aggregate_id=worker_id,
+            run_id="registry",
+            worker_id=worker_id,
+            trace_id="registry",
+            payload={"from": previous, "to": current},
+        )
 
 
 def _as_utc(value: datetime) -> datetime:
