@@ -36,6 +36,10 @@ class RegistryService:
         else:
             for key, value in values.items():
                 setattr(record, key, value)
+            for previous_lease in self._session.scalars(
+                select(LeaseRecord).where(LeaseRecord.worker_id == worker.worker_id)
+            ):
+                self._session.delete(previous_lease)
         lease = LeaseRecord(
             lease_id=new_id("lease"),
             worker_id=worker.worker_id,
@@ -63,3 +67,28 @@ class RegistryService:
                 select(WorkerRecordDb).where(WorkerRecordDb.status.in_(["READY", "BUSY"]))
             )
         )
+
+    def scan_expired_leases(self, now: datetime | None = None) -> list[str]:
+        now = now or datetime.now(UTC)
+        changed_workers: list[str] = []
+        leases = self._session.scalars(select(LeaseRecord)).all()
+        for lease in leases:
+            worker = self._session.get(WorkerRecordDb, lease.worker_id)
+            if worker is None:
+                continue
+            expires_at = _as_utc(lease.expires_at)
+            last_seen_at = _as_utc(lease.last_seen_at)
+            if expires_at <= now:
+                if worker.status != WorkerStatus.OFFLINE.value:
+                    worker.status = WorkerStatus.OFFLINE.value
+                    changed_workers.append(worker.worker_id)
+            elif last_seen_at + timedelta(
+                seconds=self._settings.registry_heartbeat_seconds
+            ) <= now and worker.status in {WorkerStatus.READY.value, WorkerStatus.BUSY.value}:
+                worker.status = WorkerStatus.SUSPECT.value
+                changed_workers.append(worker.worker_id)
+        return changed_workers
+
+
+def _as_utc(value: datetime) -> datetime:
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
