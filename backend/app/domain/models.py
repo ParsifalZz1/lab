@@ -92,3 +92,35 @@ class Artifact(DomainModel):
     source_metadata: dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=utc_now)
     expires_at: datetime | None = None
+
+
+class CapabilityRecord(DomainModel):
+    name: str
+    version: str
+    input_schema: str
+    output_schema: str
+    constraints: dict[str, Any] = Field(default_factory=dict)
+    quality_hints: dict[str, Any] = Field(default_factory=dict)
+
+
+class WorkerRecord(DomainModel):
+    worker_id: str
+    role: str
+    display_name: str
+    endpoints: tuple[dict[str, str], ...]
+    capabilities: tuple[CapabilityRecord, ...]
+    resources: dict[str, Any]
+    location: dict[str, str] = Field(default_factory=dict)
+    failure_domain: str
+    status: str = "REGISTERING"
+    version: int = Field(default=1, ge=1)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class Lease(DomainModel):
+    lease_id: str
+    worker_id: str
+    sequence: int = Field(ge=0)
+    issued_at: datetime
+    expires_at: datetime
+    last_seen_at: datetime
