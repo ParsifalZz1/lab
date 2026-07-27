@@ -36,3 +36,15 @@ def test_event_stream_replays_events_after_cursor(tmp_path) -> None:
     response = TestClient(app).get("/v1/runs/run_01/events", headers={"Last-Event-ID": "0"})
 
     assert "event: run.created" in response.text
+
+
+def test_create_run_is_idempotent(tmp_path) -> None:
+    settings = Settings(_env_file=None, database_url=f"sqlite:///{tmp_path / 'idempotency.db'}")
+    Base.metadata.create_all(create_database_engine(settings))
+    client = TestClient(create_app(settings))
+    headers = {"Idempotency-Key": "request-01"}
+
+    first = client.post("/v1/runs", headers=headers, json={"goal": "Analyze reviews", "input": {}})
+    second = client.post("/v1/runs", headers=headers, json={"goal": "Analyze reviews", "input": {}})
+
+    assert first.json()["run_id"] == second.json()["run_id"]

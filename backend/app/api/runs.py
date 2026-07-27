@@ -29,11 +29,27 @@ def create_run(
 ) -> dict[str, object]:
     if body.input is None:
         raise HTTPException(status_code=400, detail="input is required")
+    idempotency_key = request.headers.get("Idempotency-Key")
+    if idempotency_key:
+        existing = session.scalars(
+            select(RunRecord).where(
+                RunRecord.tenant_id == "local", RunRecord.idempotency_key == idempotency_key
+            )
+        ).first()
+        if existing:
+            if existing.goal != body.goal or existing.output_constraints != body.output:
+                raise HTTPException(status_code=409, detail="IDEMPOTENCY_CONFLICT")
+            return {
+                "run_id": existing.run_id,
+                "status": existing.status,
+                "created_at": existing.created_at,
+            }
     now = datetime.now(UTC)
     run = RunRecord(
         run_id=new_run_id(),
         tenant_id="local",
         request_id=request.headers.get("X-Request-Id", "local"),
+        idempotency_key=idempotency_key,
         goal=body.goal,
         input_ref=None,
         output_constraints=body.output,
@@ -108,8 +124,7 @@ def stream_events(
     def body():
         for event in events:
             yield (
-                f"id: {event.sequence}\nevent: {event.topic}\n"
-                f"data: {json.dumps(event.payload)}\n\n"
+                f"id: {event.sequence}\nevent: {event.topic}\ndata: {json.dumps(event.payload)}\n\n"
             )
 
     return StreamingResponse(body(), media_type="text/event-stream")
